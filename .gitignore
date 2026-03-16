@@ -1,0 +1,20 @@
+# Database
+attendance.db
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.env/
+.venv/
+
+# Temporary / Debug files
+debug_imports.py
+test.py
+py_list.txt
+py_ver.txt
+output.txt
