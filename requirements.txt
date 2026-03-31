@@ -3,3 +3,4 @@ face_recognition
 numpy
 face_recognition_models @ git+https://github.com/ageitgey/face_recognition_models
 setuptools<70
+Flask

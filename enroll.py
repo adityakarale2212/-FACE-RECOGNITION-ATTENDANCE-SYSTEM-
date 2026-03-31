@@ -6,21 +6,27 @@ import pickle
 import sys
 
 def register_student():
-    student_id = input("Enter Student ID: ").strip()
-    name = input("Enter Student Name: ").strip()
+    student_id = input("Enter Student ID to scan face for: ").strip()
 
-    if not student_id or not name:
-        print("Error: content cannot be empty.")
+    if not student_id:
+        print("Error: Student ID cannot be empty.")
         return
 
     # Check if exists
     conn = sqlite3.connect('attendance.db')
     c = conn.cursor()
-    c.execute("SELECT * FROM students WHERE student_id=?", (student_id,))
-    if c.fetchone():
-        print(f"Error: Student ID {student_id} already exists.")
+    c.execute("SELECT name, encoding FROM students WHERE student_id=?", (student_id,))
+    row = c.fetchone()
+    
+    if not row:
+        print(f"Error: Student ID '{student_id}' not found in database. Please preload them first.")
         conn.close()
         return
+        
+    name, existing_encoding = row
+    if existing_encoding is not None:
+        print(f"Note: {name} already has a face registered. This will overwrite it.")
+        
     conn.close()
 
     print("Opening webcam... Press 's' to capture, 'q' to quit.")
@@ -60,15 +66,15 @@ def register_student():
                 encoding = encodings[0]
                 blob_data = pickle.dumps(encoding)
 
-                # Save to DB
+                # Save to DB (Update instead of Insert)
                 try:
                     conn = sqlite3.connect('attendance.db')
                     c = conn.cursor()
-                    c.execute("INSERT INTO students (student_id, name, encoding) VALUES (?, ?, ?)", 
-                              (student_id, name, blob_data))
+                    c.execute("UPDATE students SET encoding=? WHERE student_id=?", 
+                              (blob_data, student_id))
                     conn.commit()
                     conn.close()
-                    print(f"Successfully registered {name} ({student_id})!")
+                    print(f"Successfully saved face for {name} ({student_id})!")
                     break
                 except Exception as e:
                     print(f"Database error: {e}")

@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Face Recognition Attendance</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    {% block extra_head %}{% endblock %}
+</head>
+<body>
+    <div class="app-container">
+        <nav class="glass-nav">
+            <div class="nav-logo">ID-Verify</div>
+            <div class="nav-links">
+                <a href="/" class="{{ 'active' if request.path == '/' else '' }}">Attendance Tracker</a>
+                <a href="/enroll_view" class="{{ 'active' if request.path == '/enroll_view' else '' }}">Student Enrollment</a>
+                <a href="/admin" class="{{ 'active' if request.path == '/admin' else '' }}">Admin Dashboard</a>
+            </div>
+        </nav>
+        
+        <main class="content-wrapper">
+            {% block content %}{% endblock %}
+        </main>
+        
+        <div class="ambient-glow glow-1"></div>
+        <div class="ambient-glow glow-2"></div>
+    </div>
+</body>
+</html>

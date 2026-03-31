@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="enroll-container kiosk-container">
+    <div class="info-section glass-panel">
+        <h1 class="gradient-text">Face Enrollment</h1>
+        <p class="subtitle">Enter the Student ID to associate a face profile.</p>
+        
+        <div class="form-group">
+            <label for="student_id">Student ID</label>
+            <input type="text" id="student_id" placeholder="e.g. A01" autocomplete="off" />
+        </div>
+        
+        <button id="capture-btn" class="primary-btn">Link Face to Profile</button>
+        
+        <div id="enroll-message" class="message-box"></div>
+    </div>
+
+    <div class="camera-section glass-panel">
+        <div class="video-wrapper">
+            <video id="webcam" autoplay playsinline></video>
+            <canvas id="canvas" style="display:none;"></canvas>
+            <div class="camera-overlay focus-ring"></div>
+        </div>
+    </div>
+</div>
+
+<script src="{{ url_for('static', filename='js/enroll.js') }}"></script>
+{% endblock %}

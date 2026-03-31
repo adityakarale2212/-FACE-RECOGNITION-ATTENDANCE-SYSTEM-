@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="kiosk-container">
+    <div class="camera-section glass-panel">
+        <div class="video-wrapper">
+            <video id="webcam" autoplay playsinline></video>
+            <canvas id="canvas" style="display:none;"></canvas>
+            <div class="camera-overlay"></div>
+            <div class="status-badge" id="live-indicator">
+                <div class="dot red-dot pulse"></div> LIVE
+            </div>
+        </div>
+    </div>
+
+    <div class="info-section glass-panel">
+        <h1 class="gradient-text">Attendance Node</h1>
+        <p class="subtitle">Please look at the camera and blink to verify.</p>
+        
+        <div class="data-grid">
+            <div class="data-card">
+                <div class="data-label">Identified Subect</div>
+                <div class="data-value highlight" id="id-name">Scanning...</div>
+            </div>
+            <div class="data-card">
+                <div class="data-label">Liveness (Blinks)</div>
+                <div class="data-value" id="id-blinks">0</div>
+            </div>
+            <div class="data-card full-width">
+                <div class="data-label">System Status</div>
+                <div class="data-value status-text" id="id-status">Initializing...</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="{{ url_for('static', filename='js/main.js') }}"></script>
+{% endblock %}

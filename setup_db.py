@@ -16,7 +16,7 @@ def init_db():
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             student_id TEXT UNIQUE NOT NULL,
             name TEXT NOT NULL,
-            encoding BLOB NOT NULL,
+            encoding BLOB,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
     ''')

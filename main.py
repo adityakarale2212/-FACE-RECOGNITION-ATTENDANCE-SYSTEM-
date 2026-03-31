@@ -15,7 +15,7 @@ RESIZE_FACTOR = 0.25
 def get_known_encodings():
     conn = sqlite3.connect('attendance.db')
     c = conn.cursor()
-    c.execute("SELECT student_id, name, encoding FROM students")
+    c.execute("SELECT student_id, name, encoding FROM students WHERE encoding IS NOT NULL")
     rows = c.fetchall()
     conn.close()
     
