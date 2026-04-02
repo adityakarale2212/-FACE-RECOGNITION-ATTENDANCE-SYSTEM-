@@ -1,0 +1,315 @@
+{% extends "base.html" %}
+
+{% block extra_head %}
+<style>
+    .physical-sheet {
+        background: #ffffff;
+        color: #333;
+        padding: 3rem;
+        border-radius: 12px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+        margin-top: 2rem;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        overflow-x: auto;
+        border: 1px solid #e5e7eb;
+    }
+    .sheet-header {
+        text-align: center;
+        margin-bottom: 2rem;
+        border-bottom: 3px double #d1d5db;
+        padding-bottom: 1.5rem;
+    }
+    .sheet-header h1 {
+        font-size: 1.6rem;
+        margin: 0;
+        text-transform: uppercase;
+        font-weight: 800;
+        letter-spacing: 1px;
+        color: #111827;
+    }
+    .sheet-header h2 {
+        font-size: 1.2rem;
+        margin: 12px 0;
+        text-decoration: underline;
+        color: #374151;
+        font-weight: 700;
+    }
+    .sheet-meta {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 1.5rem;
+        font-size: 1rem;
+        flex-wrap: wrap;
+        background: #f9fafb;
+        padding: 1.2rem;
+        border-radius: 8px;
+        border: 1px solid #e5e7eb;
+    }
+    .sheet-meta div {
+        margin-bottom: 5px;
+        color: #4b5563;
+    }
+    .sheet-meta strong {
+        color: #0f172a;
+        font-weight: 700;
+    }
+    .sheet-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 1rem;
+        font-size: 0.95rem;
+        border: 2px solid #374151;
+    }
+    .sheet-table th, .sheet-table td {
+        border: 1px solid #94a3b8;
+        padding: 12px 8px;
+        text-align: center;
+    }
+    .sheet-table th {
+        background-color: #1e293b;
+        color: #f8fafc;
+        font-weight: 700;
+        text-transform: uppercase;
+        font-size: 0.8rem;
+        letter-spacing: 0.5px;
+    }
+    .sheet-table th:nth-child(2), .sheet-table td:nth-child(2) {
+        text-align: left;
+        padding-left: 15px;
+    }
+    .sheet-table tbody tr:nth-child(even) {
+        background-color: #f1f5f9;
+    }
+    .sheet-table tbody tr:hover {
+        background-color: #e2e8f0;
+    }
+    .present-mark {
+        color: #065f46;
+        background-color: #d1fae5;
+        font-weight: 900;
+        font-size: 1.1rem;
+    }
+    .absent-mark {
+        color: #991b1b;
+        background-color: #fee2e2;
+        font-weight: 900;
+        font-size: 1.1rem;
+    }
+    .total-col {
+        background-color: #f8fafc;
+        font-weight: 800;
+        color: #1e293b;
+    }
+    .controls {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1rem;
+    }
+    .btn-export {
+        background: #059669;
+        color: white;
+        border: none;
+        padding: 0.6rem 1.2rem;
+        border-radius: 6px;
+        cursor: pointer;
+        font-weight: 600;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+        transition: 0.2s;
+    }
+    .btn-export:hover {
+        background: #047857;
+        transform: translateY(-1px);
+    }
+    .div-tabs {
+        display: flex;
+        gap: 0.5rem;
+        background: rgba(15, 23, 42, 0.5);
+        padding: 6px;
+        border-radius: 10px;
+        backdrop-filter: blur(8px);
+    }
+    .div-tab {
+        padding: 0.6rem 1.2rem;
+        color: #e2e8f0;
+        text-decoration: none;
+        border-radius: 6px;
+        font-weight: 600;
+        transition: 0.3s;
+        font-size: 0.9rem;
+    }
+    .div-tab:hover {
+        background: rgba(255,255,255,0.1);
+        color: white;
+    }
+    .div-tab.active {
+        background: #3b82f6;
+        color: white;
+        box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+    }
+    .week-nav {
+        display: flex;
+        align-items: center;
+        gap: 1.5rem;
+        background: rgba(15, 23, 42, 0.4);
+        padding: 8px 20px;
+        border-radius: 30px;
+    }
+    .btn-nav {
+        color: #94a3b8;
+        padding: 5px 10px;
+        border-radius: 20px;
+        text-decoration: none;
+        transition: 0.2s;
+        font-weight: 600;
+    }
+    .btn-nav:hover {
+        color: white;
+        background: rgba(255,255,255,0.1);
+    }
+    .btn-print {
+        background: #6366f1;
+        color: white;
+        border: none;
+        padding: 0.6rem 1.2rem;
+        border-radius: 6px;
+        cursor: pointer;
+        font-weight: 600;
+        box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+        transition: 0.2s;
+    }
+    .btn-print:hover {
+        background: #4f46e5;
+        transform: translateY(-1px);
+    }
+    .total-row {
+        background-color: #1e293b !important;
+        color: #f8fafc !important;
+        font-weight: 900;
+        font-size: 1rem;
+    }
+    .total-row td {
+        border: 1px solid #475569 !important;
+    }
+    @media print {
+        .glass-nav, .controls, .ambient-glow {
+            display: none !important;
+        }
+        .physical-sheet {
+            box-shadow: none;
+            border: 1px solid #000;
+            margin: 0;
+            padding: 10px;
+            width: 100%;
+        }
+        body {
+            background: white !important;
+            color: black !important;
+        }
+        .sheet-table th {
+            background-color: #eee !important;
+            color: black !important;
+        }
+        .present-mark {
+            color: black !important;
+            background-color: #dfd !important;
+        }
+        .absent-mark {
+            color: black !important;
+            background-color: #fdd !important;
+        }
+        .total-row {
+            background-color: #eee !important;
+            color: black !important;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="controls" style="flex-direction: column; align-items: flex-start; gap: 1.5rem;">
+    <div style="display: flex; justify-content: space-between; width: 100%; align-items: center;">
+        <div class="div-tabs">
+            {% for div in divisions %}
+                <a href="?div={{ div }}&week_offset={{ week_offset }}" class="div-tab {% if active_div == div %}active{% endif %}">Division {{ div }}</a>
+            {% endfor %}
+        </div>
+        <div style="display: flex; gap: 10px;">
+            <a href="/api/export_excel?div={{ active_div }}&week_offset={{ week_offset }}" class="btn-export">📥 Export to Excel</a>
+            <button onclick="window.print()" class="btn-print">🖨️ Print Sheet</button>
+        </div>
+    </div>
+    
+    <div class="week-nav">
+        <a href="?div={{ active_div }}&week_offset={{ week_offset - 1 }}" class="btn-nav">← Previous Week</a>
+        <span style="color: white; font-weight: 600;">
+            {% if week_offset == 0 %}This Week{% elif week_offset == -1 %}Last Week{% elif week_offset > 0 %}Next Week (+{{ week_offset }}){% else %}{{ week_offset|abs }} Weeks Ago{% endif %}
+        </span>
+        <a href="?div={{ active_div }}&week_offset={{ week_offset + 1 }}" class="btn-nav">Next Week →</a>
+    </div>
+</div>
+
+<div class="physical-sheet">
+    <div class="sheet-header">
+        <h1>K J SOMAIYA INSTITUTE OF ENGINEERING AND INFORMATION TECHNOLOGY</h1>
+        <h2>STUDENTS ATTENDANCE REPORT</h2>
+    </div>
+    <div class="sheet-meta">
+        <div>Department of: <strong>AI & DS</strong> Engineering</div>
+        <div>Class: <strong>SY - {{ active_div }}</strong></div>
+        <div>Sub: <strong>AIA & E</strong></div>
+        <div>Semester: <strong>IV</strong></div>
+    </div>
+    
+    <table class="sheet-table">
+        <thead>
+            <tr>
+                <th>R. No.</th>
+                <th>Name of Student</th>
+                {% for dt in dates %}
+                <th>
+                    {% if loop.index == 1 %}Mon<br>{% elif loop.index == 2 %}Tue<br>{% elif loop.index == 3 %}Wed<br>{% elif loop.index == 4 %}Thu<br>{% elif loop.index == 5 %}Fri<br>{% endif %}
+                    <span style="font-weight:normal; font-size:0.8rem;">{{ dt.split('-')[-1] + '/' + dt.split('-')[-2] }}</span>
+                </th>
+                {% endfor %}
+                <th>Total</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for student in sheet_data %}
+            <tr>
+                <td style="font-weight: 600; color: #4b5563;">{{ student.roll }}</td>
+                <td style="font-weight: 600; color: #1f2937;">{{ student.name }}</td>
+                {% for dt in dates %}
+                    {% if student.attendance[dt] == 'P' %}
+                        <td class="present-mark">P</td>
+                    {% elif student.attendance[dt] == 'A' %}
+                        <td class="absent-mark">A</td>
+                    {% else %}
+                        <td></td>
+                    {% endif %}
+                {% endfor %}
+                <td class="total-col"><strong>{{ student.total }}</strong></td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="{{ 3 + dates|length }}" style="text-align: center; padding: 2rem; color: #6b7280;">No students found for Division {{ active_div }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+        <tfoot>
+            <tr class="total-row">
+                <td colspan="2" style="text-align: right; padding-right: 15px;">TOTAL PRESENT:</td>
+                {% for dt in dates %}
+                <td>{{ daily_totals[dt] }}</td>
+                {% endfor %}
+                <td></td>
+            </tr>
+        </tfoot>
+    </table>
+</div>
+{% endblock %}

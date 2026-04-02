@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, jsonify
+from flask import Flask, render_template, request, jsonify, send_file
 import cv2
 import face_recognition
 import sqlite3
@@ -6,6 +6,9 @@ import numpy as np
 import pickle
 import datetime
 import base64
+import pandas as pd
+import io
+from collections import defaultdict
 
 app = Flask(__name__)
 
@@ -44,21 +47,19 @@ def log_attendance(student_id, name):
     conn = get_db_connection()
     c = conn.cursor()
     
-    # Check last log
+    # Check if already marked TODAY
+    now = datetime.datetime.now()
+    today_str = now.strftime("%Y-%m-%d")
+    
     c.execute("""
-        SELECT timestamp FROM attendance_logs 
-        WHERE student_id=? 
-        ORDER BY timestamp DESC LIMIT 1
-    """, (student_id,))
+        SELECT 1 FROM attendance_logs 
+        WHERE student_id=? AND date(timestamp) = ?
+    """, (student_id, today_str))
     row = c.fetchone()
     
-    now = datetime.datetime.now()
-    
     if row:
-        last_time = datetime.datetime.strptime(row['timestamp'], "%Y-%m-%d %H:%M:%S.%f") if '.' in row['timestamp'] else datetime.datetime.strptime(row['timestamp'], "%Y-%m-%d %H:%M:%S")
-        if (now - last_time).total_seconds() < COOLDOWN_SECONDS:
-            conn.close()
-            return False, "Already marked recently"
+        conn.close()
+        return False, "Already marked today"
             
     c.execute("INSERT INTO attendance_logs (student_id, timestamp, status) VALUES (?, ?, ?)", 
               (student_id, now.strftime("%Y-%m-%d %H:%M:%S.%f"), 'PRESENT'))
@@ -122,6 +123,128 @@ def admin():
     
     conn.close()
     return render_template('admin.html', students=students, logs=logs)
+
+@app.route('/dashboard')
+def dashboard():
+    week_offset = int(request.args.get('week_offset', 0))
+    today = datetime.date.today()
+    monday = today - datetime.timedelta(days=today.weekday())
+    target_monday = monday + datetime.timedelta(weeks=week_offset)
+    dates = [(target_monday + datetime.timedelta(days=i)).strftime('%Y-%m-%d') for i in range(5)]
+    
+    conn = get_db_connection()
+    c = conn.cursor()
+    
+    c.execute("SELECT student_id, name FROM students ORDER BY student_id")
+    all_students = c.fetchall()
+    
+    c.execute("SELECT student_id, date(timestamp) as dt FROM attendance_logs WHERE status='PRESENT' AND date(timestamp) >= ? AND date(timestamp) <= ?", (dates[0], dates[-1]))
+    logs = c.fetchall()
+    conn.close()
+    
+    divisions = set()
+    students_by_div = defaultdict(list)
+    
+    for s in all_students:
+        sid = s['student_id']
+        name = s['name']
+        div = sid[0] if sid else 'Unknown'
+        divisions.add(div)
+        students_by_div[div].append({'roll': sid, 'name': name, 'attendance': {}, 'total': 0})
+        
+    divisions = sorted(list(divisions))
+    active_div = request.args.get('div', divisions[0] if divisions else 'A')
+    
+    logs_by_sid = defaultdict(set)
+    for lg in logs:
+        if lg['student_id'].startswith(active_div):
+            logs_by_sid[lg['student_id']].add(lg['dt'])
+    
+    sheet_data = students_by_div.get(active_div, [])
+    daily_totals = {dt: 0 for dt in dates}
+    for student in sheet_data:
+        sid = student['roll']
+        for dt in dates:
+            if dt in logs_by_sid[sid]:
+                student['attendance'][dt] = 'P'
+                student['total'] += 1
+                daily_totals[dt] += 1
+            else:
+                student['attendance'][dt] = 'A'
+                
+    return render_template('dashboard.html', 
+                           divisions=divisions, 
+                           active_div=active_div, 
+                           dates=dates, 
+                           sheet_data=sheet_data,
+                           daily_totals=daily_totals,
+                           week_offset=week_offset)
+
+@app.route('/api/export_excel')
+def export_excel():
+    active_div = request.args.get('div', 'A')
+    week_offset = int(request.args.get('week_offset', 0))
+    
+    today = datetime.date.today()
+    monday = today - datetime.timedelta(days=today.weekday())
+    target_monday = monday + datetime.timedelta(weeks=week_offset)
+    dates = [(target_monday + datetime.timedelta(days=i)).strftime('%Y-%m-%d') for i in range(5)]
+    
+    conn = get_db_connection()
+    c = conn.cursor()
+    
+    c.execute("SELECT student_id, name FROM students WHERE student_id LIKE ? ORDER BY student_id", (f"{active_div}%",))
+    students = c.fetchall()
+    
+    c.execute("SELECT student_id, date(timestamp) as dt FROM attendance_logs WHERE status='PRESENT' AND student_id LIKE ? AND date(timestamp) >= ? AND date(timestamp) <= ?", (f"{active_div}%", dates[0], dates[-1]))
+    logs = c.fetchall()
+    conn.close()
+    
+    logs_by_sid = defaultdict(set)
+    for lg in logs:
+        logs_by_sid[lg['student_id']].add(lg['dt'])
+        
+    data = []
+    daily_totals = {f"{dt.split('-')[-1]}/{dt.split('-')[-2]}": 0 for dt in dates}
+    
+    for s in students:
+        sid = s['student_id']
+        row = {
+            'R. No.': sid,
+            'Name of Student': s['name']
+        }
+        total = 0
+        for dt in dates:
+            display_dt = f"{dt.split('-')[-1]}/{dt.split('-')[-2]}"
+            if dt in logs_by_sid[sid]:
+                row[display_dt] = 'P'
+                total += 1
+                daily_totals[display_dt] += 1
+            else:
+                row[display_dt] = 'A'
+        row['Total'] = total
+        data.append(row)
+        
+    total_row = {
+        'R. No.': '',
+        'Name of Student': 'TOTAL PRESENT'
+    }
+    for dt in dates:
+        display_dt = f"{dt.split('-')[-1]}/{dt.split('-')[-2]}"
+        total_row[display_dt] = daily_totals[display_dt]
+    total_row['Total'] = ''
+    data.append(total_row)
+        
+    df = pd.DataFrame(data)
+    
+    output = io.BytesIO()
+    with pd.ExcelWriter(output, engine='openpyxl') as writer:
+        df.to_excel(writer, sheet_name=f'Div {active_div}', index=False)
+        
+    output.seek(0)
+    
+    return send_file(output, download_name=f'Attendance_Sheet_Div_{active_div}.xlsx', as_attachment=True)
+
 
 @app.route('/api/process_frame', methods=['POST'])
 def process_frame():

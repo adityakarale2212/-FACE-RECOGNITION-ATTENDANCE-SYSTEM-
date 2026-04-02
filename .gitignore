@@ -1,5 +1,8 @@
-# Database
+# Database (local only, do not commit)
 attendance.db
+*.db
+*.db-shm
+*.db-wal
 
 # Python
 __pycache__/
@@ -18,3 +21,18 @@ test.py
 py_list.txt
 py_ver.txt
 output.txt
+result.txt
+result2.txt
+check_formats_out.txt
+check_logs.txt
+check_students_enc.txt
+students_check.txt
+students_list.txt
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
